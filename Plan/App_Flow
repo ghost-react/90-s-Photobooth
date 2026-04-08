@@ -1,0 +1,57 @@
+### **State 1: The Idle "Attract" Mode**
+* **Visual:** A grainy, low-frame-rate live preview of the camera (simulating an old monitor). A large, pulsing vintage **"START"** button is at the bottom.
+* **Audio:** A low, ambient electrical hum or "white noise."
+* **User Action:** User clicks the "START" button.
+
+### **State 2: The Initiation**
+* **Visual:** The screen dims slightly. A "Prepare Yourself" message appears for 2 seconds.
+* **Audio:** A heavy mechanical "clunk" sound (like a gear engaging).
+* **Transition:** Automatically moves to the **Capture Loop**.
+
+### **State 3: The Capture Loop (Repeats 3 Times)**
+This is where the "3-second gap" logic lives.
+
+1.  **Countdown:** A large "3... 2... 1..." overlays the live feed.
+2.  **The Freeze:** At 0.5 seconds, the live feed **freezes**. This forces the "panic" pose.
+3.  **The Flash:** The entire screen turns **solid white** ($100\%$ brightness) for 150ms.
+4.  **The Shutter:** A loud "Ka-Chack!" camera shutter sound plays.
+5.  **The Store:** The frame is saved to a temporary buffer.
+6.  **The Gap:** A 3-second "Reset" period where the live feed returns, allowing the user to change their pose for the next shot.
+
+### **State 4: The Mechanical Assembly**
+* **Visual:** A "Processing..." or "Developing..." progress bar appears.
+* **Behind the Scenes:** * The 3 photos are stitched vertically.
+    * Grain, vignette, and a "Polaroid" color LUT (Look-Up Table) are applied.
+    * A white border frame is added around the entire strip.
+* **Audio:** Sound of a printer motor whirring or paper sliding against metal.
+
+### **State 5: The "Chemical" Reveal**
+* **Visual:** The final 3-photo strip appears on the screen, but it is **blank white** or very blurry.
+* **The Fade:** Over 8–10 seconds, the opacity of the photos increases, and colors shift from washed-out blue to the final vintage look.
+* **User Action:** The user watches their photos "develop" in real-time.
+
+### **State 6: Final Result & Reset**
+* **Visual:** The fully developed strip is displayed next to two options: **[Save to Gallery]** and **[Finish]**.
+* **Audio:** A "ding" or the sound of a photo dropping into a metal tray.
+* **Transition:** Clicking "Finish" clears the buffer and returns the app to **State 1 (Idle)**.
+
+---
+
+## Logic Flowchart for Developers
+
+```mermaid
+graph TD
+    A[Start: Idle Mode] --> B{Button Clicked?}
+    B -- Yes --> C[Start Sequence]
+    C --> D[Loop Start: 1 to 3]
+    D --> E[3s Countdown + Live Feed]
+    E --> F[Freeze Frame & Flash]
+    F --> G[Capture & Save Frame]
+    G --> H{All 3 Taken?}
+    H -- No --> D
+    H -- Yes --> I[Stitch & Apply Filters]
+    I --> J[Slow Reveal Animation]
+    J --> K[Display Final Strip]
+    K --> L[Save/Reset]
+    L --> A
+```

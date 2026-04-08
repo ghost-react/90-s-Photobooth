@@ -1,0 +1,53 @@
+### 1\. The Physical Interaction (The "Big Red Button")
+
+  * **The Trigger:** Instead of a coin slot, the UI features a prominent, vintage-style **"START" button**.
+  * **Action:** Once clicked, the software enters an **uninterruptible state**. There is no "back" or "reset" until the strip is fully "developed."
+
+### 2\. Capture Sequence & Timing
+
+  * **The 3-3-3 Rule:**
+      * **3 Photos** total.
+      * **3-Second Intervals** between each photo.
+      * **3-Second Countdown** before the very first shot.
+  * **The "Flash" Protocol:** At the moment of capture (T-minus 0), the screen must instantly fill with **\#FFFFFF (Solid White)** for 150ms to simulate the blinding flash, followed by a mechanical "shutter click" sound.
+
+### 3\. On-Screen Display (OSD) Logic
+
+Since you want to see this on your screen, the UI needs two distinct phases:
+
+#### **Phase 1: The Live Preview**
+
+  * **Viewfinder:** A live feed from your webcam.
+  * **The Overlay:** A grainy, flickering "overlay" (simulating a CRT monitor or old glass) so the digital camera doesn't look too "clean."
+  * **The Blind Spot:** **Crucial Step.** The live preview should freeze or go black 0.5 seconds before the flash. This forces the user to commit to their pose without seeing the final frame.
+
+#### **Phase 2: The Strip Animation**
+
+  * **Vertical Assembly:** As each photo is taken, a **thumbnail** of the strip appears on the right side of the screen.
+  * **The Reveal:** The photos appear as "blank white" at first, slowly fading in over 10 seconds (simulating the Polaroid chemical reaction) while the user watches the screen.
+
+-----
+
+### 4\. Updated Technical Specifications
+
+| Feature | Engineering Requirement |
+| :--- | :--- |
+| **Logic Loop** | `for i in range(3):` <br> 1. Start 3s countdown timer. <br> 2. Flash screen white. <br> 3. Capture `Frame[i]`. <br> 4. Sound: `shutter.wav`. |
+| **Image Formatting** | Stitch 3 frames into a single vertical `.png`. <br> Total aspect ratio: **1:3** (e.g., $600 \times 1800$ pixels). |
+| **Gap Management** | Add a **20-pixel black or white gap** between the photos within the strip to mimic the physical paper dividers. |
+| **Development UI** | Use an Opacity filter: `Image_Alpha` goes from `0.0` to `1.0` over a duration of 10 seconds post-capture. |
+
+-----
+
+### 5\. Implementation Notes for Your Project
+
+Since you are a CSE student, here’s how you can handle the "Screen Edit" part:
+
+1.  **UI Framework:** Use **CustomTkinter** or **PyQt6**. They allow you to create a "Full Screen" mode that hides your Windows/Mac taskbar, making your laptop feel like the actual booth.
+2.  **State Machine:**
+      * `IDLE`: Show "Press Button to Start" and a grainy live feed.
+      * `COUNTDOWN`: Large numbers overlaying the feed.
+      * `FLASH`: White screen.
+      * `PROCESSING`: Show the "blank" strip and start the fade-in animation.
+      * `RESULT`: Option to "Save to Desktop" or "Start Over."
+

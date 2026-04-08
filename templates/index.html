@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The 90s Photobooth</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    
+    <div class="title">THE 90S PHOTOBOOTH</div>
+
+    <div class="screen-container" id="screen-container">
+        <!-- Live Video Feed -->
+        <video id="camera-feed" autoplay playsinline></video>
+        
+        <!-- Text Overlay -->
+        <div id="overlay-text"></div>
+        
+        <!-- Flash Effect -->
+        <div id="flash-overlay"></div>
+
+        <!-- Result Strip View -->
+        <div id="result-container">
+            <img id="result-strip" src="" alt="Developed Strip">
+        </div>
+    </div>
+
+    <div class="controls">
+        <select id="mode-select" class="btn" style="background-color: #551A8B; margin-right: 15px; font-size: 16px; padding: 10px;">
+            <option value="standard">MODE: STANDARD STRIP</option>
+            <option value="twin">MODE: TWIN PRINT</option>
+            <option value="combine">MODE: COMBINE SESSIONS</option>
+            <option value="ghost">MODE: GHOST EXPOSURE</option>
+        </select>
+        <span id="upload-wrapper" style="display: none; margin-right: 15px;">
+            <input type="file" id="prev-strip-upload" accept="image/png, image/jpeg" style="color: white; width: 200px;">
+        </span>
+        <select id="layout-select" class="btn" style="background-color: #333333; margin-right: 15px; font-size: 16px; padding: 10px;">
+            <option value="vertical">LAYOUT: VERTICAL</option>
+            <option value="horizontal">LAYOUT: HORIZONTAL</option>
+        </select>
+        <button id="start-btn" class="btn">INITIATE CAPTURE</button>
+        <button id="save-btn" class="btn">SAVE STRIP</button>
+        <button id="reset-btn" class="btn">START OVER</button>
+    </div>
+
+    <!-- Hidden canvas to dump video frames -->
+    <canvas id="capture-canvas"></canvas>
+
+    <!-- Audio Elements -->
+    <audio id="snd-shutter" src="{{ url_for('static', filename='assets/shutter.wav') }}" preload="auto"></audio>
+    <audio id="snd-whirr" src="{{ url_for('static', filename='assets/mechanical_whirr.wav') }}" preload="auto" loop></audio>
+
+    <script>
+        const video = document.getElementById('camera-feed');
+        const canvas = document.getElementById('capture-canvas');
+        const ctx = canvas.getContext('2d');
+        const overlayText = document.getElementById('overlay-text');
+        const flashOverlay = document.getElementById('flash-overlay');
+        const resultContainer = document.getElementById('result-container');
+        const resultStrip = document.getElementById('result-strip');
+        
+        const startBtn = document.getElementById('start-btn');
+        const saveBtn = document.getElementById('save-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const layoutSelect = document.getElementById('layout-select');
+        const modeSelect = document.getElementById('mode-select');
+        const uploadWrapper = document.getElementById('upload-wrapper');
+        const prevStripUpload = document.getElementById('prev-strip-upload');
+
+        const sndShutter = document.getElementById('snd-shutter');
+        const sndWhirr = document.getElementById('snd-whirr');
+
+        let frames = [];
+        let photosTaken = 0;
+        const maxPhotos = 3;
+        let stream = null;
+        let prevStripBase64 = null;
+
+        modeSelect.addEventListener('change', () => {
+            if (modeSelect.value === 'combine' || modeSelect.value === 'ghost') {
+                uploadWrapper.style.display = 'inline-block';
+            } else {
+                uploadWrapper.style.display = 'none';
+            }
+        });
+
+        prevStripUpload.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => { prevStripBase64 = re.target.result; };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Initialize Camera
+        async function initCamera() {
+            try {
+                // Request 1080p stream
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                });
+                video.srcObject = stream;
+                
+                // Set canvas size when video starts playing
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+            } catch (err) {
+                console.error("Error accessing webcam:", err);
+                overlayText.innerText = "CAMERA NOT FOUND";
+            }
+        }
+
+        initCamera();
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        startBtn.addEventListener('click', async () => {
+            if ((modeSelect.value === 'combine' || modeSelect.value === 'ghost') && !prevStripBase64) {
+                overlayText.style.fontSize = "40px";
+                overlayText.innerText = "UPLOAD PREVIOUS STRIP FIRST!";
+                setTimeout(() => { overlayText.innerText = ""; }, 2500);
+                return;
+            }
+
+            // Hide controls
+            startBtn.style.display = 'none';
+            layoutSelect.style.display = 'none';
+            modeSelect.style.display = 'none';
+            uploadWrapper.style.display = 'none';
+            frames = [];
+            photosTaken = 0;
+            
+            // Start Whirr effect
+            sndWhirr.currentTime = 0;
+            sndWhirr.play();
+
+            overlayText.style.fontSize = "60px";
+            overlayText.innerText = "PREPARE YOURSELF\n\n- STAND BY -";
+            await sleep(2000);
+
+            captureLoop();
+        });
+
+        async function captureLoop() {
+            if (photosTaken >= maxPhotos) {
+                startProcessing();
+                return;
+            }
+
+            // Unpause video if paused from previous freeze
+            video.play();
+
+            overlayText.style.fontSize = "100px";
+            overlayText.innerText = `PHOTO ${photosTaken + 1} OF 3\n\n3`;
+            
+            await sleep(1000);
+            overlayText.innerText = `2`;
+            
+            await sleep(1000);
+            overlayText.innerText = `1`;
+
+            await sleep(500);
+            // 500ms before - FREEZE FRAME (The Friction)
+            video.pause();
+
+            await sleep(500);
+            // CAPTURE MOMENT
+            sndShutter.currentTime = 0;
+            sndShutter.play();
+
+            // Flash Screen
+            flashOverlay.classList.remove('flash-active');
+            void flashOverlay.offsetWidth; // trigger reflow
+            flashOverlay.classList.add('flash-active');
+            
+            // Grab frame to Base64
+            // Keep mirroring in mind (our CSS mirrors the video, so we should mirror the canvas to match)
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            const imgBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            frames.push(imgBase64);
+
+            photosTaken++;
+            overlayText.innerText = "";
+
+            await sleep(1000); // Gap
+            captureLoop();
+        }
+
+        async function startProcessing() {
+            overlayText.style.fontSize = "50px";
+            overlayText.innerText = "- DEVELOPING -\nPLEASE WAIT";
+            
+            try {
+                const response = await fetch('/process_strip', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        frames: frames, 
+                        layout: layoutSelect.value,
+                        mode: modeSelect.value,
+                        previous_strip: prevStripBase64
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.result_image) {
+                    revealStrip(data.result_image);
+                } else {
+                    overlayText.innerText = "ERROR DEVELOPING";
+                    sndWhirr.pause();
+                }
+            } catch (err) {
+                console.error(err);
+                overlayText.innerText = "SERVER ERROR";
+                sndWhirr.pause();
+            }
+        }
+
+        async function revealStrip(resultBase64) {
+            overlayText.innerText = "";
+            resultStrip.src = resultBase64;
+            
+            // Scale image nicely based on orientation
+            if (layoutSelect.value === 'horizontal') {
+                resultStrip.style.height = 'auto';
+                resultStrip.style.width = '90%';
+            } else {
+                resultStrip.style.height = '90%';
+                resultStrip.style.width = 'auto';
+            }
+
+            // Show container
+            resultContainer.style.visibility = 'visible';
+            resultContainer.style.opacity = '1';
+
+            // Trigger CSS fade in
+            // Wait a tick for DOM to register src
+            await sleep(50);
+            resultStrip.style.opacity = '1';
+            resultStrip.style.filter = 'blur(0px) grayscale(0%)';
+
+            // Wait 10 seconds for developing sound
+            await sleep(10000);
+            sndWhirr.pause();
+
+            // Show final buttons
+            saveBtn.style.display = 'block';
+            resetBtn.style.display = 'block';
+        }
+
+        saveBtn.addEventListener('click', () => {
+            const a = document.createElement('a');
+            a.href = resultStrip.src;
+            a.download = `strip_${new Date().getTime()}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            // Reset UI
+            saveBtn.style.display = 'none';
+            resetBtn.style.display = 'none';
+            
+            resultContainer.style.visibility = 'hidden';
+            resultContainer.style.opacity = '0';
+            resultStrip.style.opacity = '0.1';
+            resultStrip.style.filter = 'blur(2px) grayscale(100%)';
+            resultStrip.src = "";
+
+            layoutSelect.style.display = 'inline-block';
+            modeSelect.style.display = 'inline-block';
+            if (modeSelect.value === 'combine' || modeSelect.value === 'ghost') {
+                uploadWrapper.style.display = 'inline-block';
+            }
+            startBtn.style.display = 'inline-block';
+            video.play();
+        });
+
+    </script>
+</body>
+</html>

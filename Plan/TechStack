@@ -1,0 +1,44 @@
+
+
+## 🛠️ Tech Stack: Project "Photobooth"
+
+### 1. Primary Language: **Python 3.10+**
+Python is the best choice here because of its extensive libraries for computer vision and its ability to handle the "logic" of the photobooth state machine easily.
+
+### 2. Frontend & UI: **CustomTkinter** or **PyQt6**
+* **Why:** You need a "Kiosk Mode" (Full-screen, no borders). 
+* **CustomTkinter:** Great for a modern-but-dark UI that feels like an industrial machine. It’s easier to learn if you want to move fast.
+* **PyQt6:** Better if you want highly complex animations (like the slow chemical fade-in) and more control over the "Flash" overlay.
+
+### 3. Vision & Image Processing (The Core)
+* **OpenCV (`cv2`):** To access the webcam, capture frames, and handle the real-time "grainy" video feed.
+* **Pillow (PIL):** To stitch the three photos into one vertical strip and add the classic white borders/margins.
+* **NumPy:** Essential for manipulating the image arrays quickly when applying filters.
+
+### 4. Aesthetics & Filters (The "Analog" Feel)
+* **Wand (ImageMagick wrapper):** Perfect for adding "noise" and "charcoal" effects that look more authentic than standard digital filters.
+* **DeOldify (Optional/AIML):** Since you are an AIML student, you could use a pre-trained GAN (Generative Adversarial Network) to "color-correct" the images into a 1970s palette.
+* **GLSL Shaders (Advanced):** If you want the live preview to look like an old CRT monitor with scanlines, you can use a shader library.
+
+### 5. Audio Handling
+* **Pygame (Mixer module):** The most reliable way to trigger the "Coin Clink," "Shutter Snap," and "Printer Whirr" sounds without lag.
+
+### 6. Storage & Export
+* **Local Filesystem:** Storing the final strips in a `./Gallery` folder.
+* **SQLite (Optional):** If you want to keep a "Log" of every session (Date, Time, Strip ID) to mimic a real machine's internal counter.
+
+---
+
+## Technical Architecture Overview
+
+| Layer | Component | Purpose |
+| :--- | :--- | :--- |
+| **Input** | `cv2.VideoCapture` | Pulls 720p or 1080p raw feed from the webcam. |
+| **Logic** | `threading` | To keep the UI responsive while the image is "processing" in the background. |
+| **Styling** | `LUT (Look-Up Tables)` | To map modern RGB colors to vintage film tones (e.g., Agfa or Kodak presets). |
+| **Output** | `Pillow.Image.save()` | Exports a high-res vertical `.png` or `.jpg` formatted for 4x6 photo paper. |
+
+---
+
+## Pro-Tip 
+To make this stand out in this project, don't just use a filter. Use a **CycleGAN**. You can train it on a dataset of "Modern Digital Photos" vs. "Scanned 1970s Polaroids." This way, your program isn't just adding a tint—it’s actually *reimagining* the photo as if it were taken 50 years ago.

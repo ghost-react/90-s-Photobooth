@@ -1,0 +1,53 @@
+
+
+## 📅 Implementation Plan: Photobooth
+
+### **Phase 1: Environment & Core Capture (Days 1-2)**
+**Goal:** Establish the bridge between the hardware (webcam) and the Python environment.
+* **Step 1.1:** Initialize a Python 3.10 virtual environment.
+* **Step 1.2:** Implement `OpenCV` camera class to pull a 1080p stream.
+* **Step 1.3:** Create a **Buffer System** to store 3 raw frames in memory (`NumPy` arrays) before processing.
+* **Step 1.4:** Map a keyboard "Space" or "Enter" key as the temporary trigger for the "Physical Button."
+
+### **Phase 2: The Logic Engine & State Machine (Days 3-4)**
+**Goal:** Code the "Friction" and "Timing" that makes it feel like an old machine.
+* **Step 2.1:** Build the **Capture Loop**:
+    * Initialize `3-second` sleep timers.
+    * Sync a `pygame.mixer` audio trigger (Shutter Click) at exactly `T-0`.
+* **Step 2.2:** Implement the **Blind-Spot Logic**:
+    * Set the UI to freeze the last frame 500ms before capture to prevent "perfect" posing.
+* **Step 2.3:** Create the **Flash Overlay**: 
+    * A top-level white window that toggles opacity $0 \rightarrow 1 \rightarrow 0$ in $150ms$.
+
+### **Phase 3: The "Chemical" Processor (Days 5-6)**
+**Goal:** Use your **AIML** background to transform digital data into analog "film."
+* **Step 3.1:** Develop the **Stitching Algorithm**:
+    * Use `Pillow` to create a vertical canvas.
+    * Apply a $20px$ divider between shots and a $50px$ "Polaroid" bottom margin.
+* **Step 3.2:** Apply **Analog Filters**:
+    * **Grain:** Add Poisson noise.
+    * **Color:** Use a Look-Up Table (LUT) for "Expired Film" tones (High contrast, crushed blacks).
+    * **Vignette:** Apply a radial gradient to darken edges.
+
+### **Phase 4: Frontend "Vintage" UI (Days 7-8)**
+**Goal:** Wrap the logic in the industrial UI described in the guidelines.
+* **Step 4.1:** Build the **CustomTkinter** Main Window in `-fullscreen` mode.
+* **Step 4.2:** Apply the **CRT Shader**:
+    * Add a semi-transparent scanline overlay.
+    * Use `Courier Prime` for all text elements.
+* **Step 4.3:** The **"Reveal" Animation**:
+    * Program a loop that increases the Alpha (Transparency) of the final strip from $0.1$ to $1.0$ over 10 seconds to simulate chemical development.
+
+---
+
+## 🛠️ Technical Checklist for Antigravity
+
+| Component | Requirement |
+| :--- | :--- |
+| **Input** | `cv2.VideoCapture(0)` at 30FPS |
+| **Audio** | `pygame.mixer` for low-latency sound triggers |
+| **State Logic** | `IDLE` $\rightarrow$ `COUNTDOWN` $\rightarrow$ `FLASH/CAPTURE` $\rightarrow$ `DEVELOPING` $\rightarrow$ `RESULT` |
+| **Stitch Ratio** | $1:3$ Aspect Ratio (Vertical) |
+| **Export** | Auto-save to `../exports/STRIP_TIMESTAMP.png` |
+
+---

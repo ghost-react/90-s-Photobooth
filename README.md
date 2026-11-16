@@ -46,8 +46,8 @@ Supports both **Vertical** (classic tall strip) and **Horizontal** layouts.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Python 3, [Flask](https://flask.palletsprojects.com/)
-- **Image Processing**: [OpenCV (cv2)](https://opencv.org/), [Pillow (PIL)](https://python-pillow.org/), [NumPy](https://numpy.org/)
+- **Backend**: Python 3, [Flask](https://flask.palletsprojects.com/) (Serverless-ready for Vercel)
+- **Image Processing**: [Pillow (PIL)](https://python-pillow.org/), [NumPy](https://numpy.org/) (pure lightweight Python/NumPy matrix transforms, 0 system library dependencies)
 - **Frontend**: HTML5, CSS3 (CRT scanline shader, retro typography), Vanilla JavaScript (WebRTC MediaDevices API, Canvas API)
 - **Audio & Assets**: Web Audio API / HTML5 Audio (shutter snap, mechanical whirring, retro digital fonts)
 
@@ -57,22 +57,28 @@ Supports both **Vertical** (classic tall strip) and **Horizontal** layouts.
 
 ```text
 90's-Photobooth/
-├── app.py                 # Flask server & API endpoints
-├── processor.py           # Image filtering, color matrix, layout stitching & grain
+├── app.py                 # Flask server & API endpoints (with 4.5MB payload defense)
+├── processor.py           # Pillow + NumPy color transform matrix, grain, & JPEG strip assembly
 ├── setup_assets.py        # Asset downloader & synthetic sound generator
-├── requirements.txt       # Python dependencies
+├── requirements.txt       # Lean Python dependencies (Flask, Pillow, numpy)
+├── vercel.json            # Vercel Python serverless configuration
+├── .vercelignore          # Files excluded from Vercel deployment bundle
 ├── README.md              # Project documentation
 │
-├── static/
-│   ├── style.css          # CRT overlay, retro arcade styling & animations
-│   └── assets/            # Audio effects & typography
+├── assets/                # Server-side committed font assets (Digital-7.ttf)
+├── public/                # Edge-served static files (CSS, fonts, audio)
+│   ├── style.css
+│   └── assets/
 │       ├── CourierPrime-Regular.ttf
+│       ├── Digital-7.ttf
 │       ├── shutter.wav
 │       └── mechanical_whirr.wav
 │
 ├── templates/
 │   └── index.html         # Photobooth UI, camera stream, countdown & state machine
 │
+└── Plan/                  # Architecture, PRD, and design specifications
+```
 └── Plan/                  # Architecture, PRD, and design specifications
 ```
 
@@ -121,6 +127,27 @@ Visit either:
 - **[http://localhost:5000](http://localhost:5000)**
 
 Allow camera permissions when prompted by your browser.
+
+---
+
+## 🌐 Deploy to Vercel
+
+The project is preconfigured for zero-friction deployment to Vercel Serverless:
+
+### Option A: Via GitHub (Recommended)
+1. Push your repository to GitHub (`https://github.com/ghost-react/90-s-Photobooth`).
+2. Go to [Vercel Dashboard](https://vercel.com/dashboard) and click **"Add New"** > **"Project"**.
+3. Import the `90-s-Photobooth` repository.
+4. Leave Framework Preset as **Other** (Vercel automatically detects `vercel.json` and `@vercel/python`).
+5. Click **Deploy**.
+
+### Option B: Via Vercel CLI
+```bash
+npm i -g vercel
+vercel
+# Follow prompts, then deploy to production:
+vercel --prod
+```
 
 ---
 

@@ -1,10 +1,11 @@
-import cv2
 import numpy as np
 from PIL import Image, ImageEnhance, ImageDraw, ImageFont
 import datetime
 import os
 import base64
 import io
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def add_noise(image_np, amount=0.04):
     """Add slight poisson/gaussian noise to simulate film grain."""
@@ -32,9 +33,10 @@ def apply_vintage_filter(image_np):
         [1.15, 0.15, 0.0 ],  # Push red channel heavily with green bleed (yellow/gold)
         [0.05, 1.10, 0.0 ],  # Push green channel up slightly
         [0.0 , 0.0 , 0.85]   # Drop blue to remove cold tones
-    ])
+    ], dtype=np.float32)
     
-    tinted = cv2.transform(img_np, transform)
+    # Apply 3x3 color matrix using NumPy matrix multiplication
+    tinted = img_np @ transform.T
     tinted = np.clip(tinted, 0, 255).astype(np.uint8)
     
     # Add heavy grain
@@ -51,22 +53,19 @@ def crop_to_portrait(image_np):
     return image_np
 
 def decode_base64_image(b64_string):
-    """Decodes a data URL base64 string to a cv2/numpy RGB array."""
-    # Split "data:image/png;base64,iVBORw0..."
-    header, encoded = b64_string.split(",", 1)
-    # Decode
+    """Decodes a data URL base64 string (JPEG or PNG) to an RGB numpy array using Pillow."""
+    if "," in b64_string:
+        _, encoded = b64_string.split(",", 1)
+    else:
+        encoded = b64_string
     data = base64.b64decode(encoded)
-    # Convert string data to numpy array for cv2
-    nparr = np.frombuffer(data, np.uint8)
-    # Decode image to RGB (OpenCV normally loads BGR, so we force RGB here)
-    img_cv = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    img_rgb = cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB)
-    return img_rgb
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    return np.array(img)
 
 def process_base64_frames(b64_frames, layout="vertical", mode="standard", prev_strip_b64=None):
     """
     Takes 3 base64 encoded frames from the frontend, processes them,
-    and returns a base64 encoded finished strip.
+    and returns a base64 encoded finished strip as JPEG.
     """
     frames_rgb = [decode_base64_image(f) for f in b64_frames]
     
@@ -94,7 +93,7 @@ def process_base64_frames(b64_frames, layout="vertical", mode="standard", prev_s
         strip_w = img_w + (border_side * 2)
         strip_h = (img_h * 3) + (gap * 2) + border_top + border_bottom
     
-    # Create white canvas
+    # Create vintage paper canvas
     strip = Image.new('RGB', (strip_w, strip_h), color='#E8E8E1')
     
     # Paste images
@@ -111,13 +110,13 @@ def process_base64_frames(b64_frames, layout="vertical", mode="standard", prev_s
     draw = ImageDraw.Draw(strip)
     timestamp = datetime.datetime.now().strftime("%Y %b %d")
     
-    font_path = os.path.join("assets", "Digital-7.ttf")
+    font_path = os.path.join(BASE_DIR, "assets", "Digital-7.ttf")
     try:
         font = ImageFont.truetype(font_path, 40)
-    except IOError:
+    except Exception:
         try:
             font = ImageFont.truetype("arial.ttf", 40)
-        except IOError:
+        except Exception:
             font = ImageFont.load_default()
             
     text_bbox = draw.textbbox((0, 0), timestamp, font=font)
@@ -161,9 +160,9 @@ def process_base64_frames(b64_frames, layout="vertical", mode="standard", prev_s
         prev_img = prev_img.resize(strip.size, Image.LANCZOS)
         strip = Image.blend(prev_img, strip, alpha=0.55) # Blend them!
     
-    # Encode final strip back to base64
+    # Encode final strip back to base64 as JPEG (~90 quality)
     buffered = io.BytesIO()
-    strip.save(buffered, format="PNG")
+    strip.save(buffered, format="JPEG", quality=90)
     img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
     
-    return f"data:image/png;base64,{img_str}"
+    return f"data:image/jpeg;base64,{img_str}"

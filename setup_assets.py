@@ -11,7 +11,7 @@ os.makedirs('assets', exist_ok=True)
 fonts = {
     'CourierPrime-Regular.ttf': 'https://github.com/google/fonts/raw/main/ofl/courierprime/CourierPrime-Regular.ttf',
     # A generic digital-style font available on github
-    'Digital-7.ttf': 'https://github.com/keshikan/DSEG/raw/master/fonts/DSEG7-Classic/DSEG7Classic-Regular.ttf'
+    'Digital-7.ttf': 'https://raw.githubusercontent.com/kevincennis/Mix.js/master/public/fonts/digital-7.ttf'
 }
 
 for font_name, url in fonts.items():

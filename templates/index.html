@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The 90s Photobooth</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
     <div class="crt-overlay"></div>
@@ -50,8 +50,8 @@
     <canvas id="capture-canvas"></canvas>
 
     <!-- Audio Elements -->
-    <audio id="snd-shutter" src="{{ url_for('static', filename='assets/shutter.wav') }}" preload="auto"></audio>
-    <audio id="snd-whirr" src="{{ url_for('static', filename='assets/mechanical_whirr.wav') }}" preload="auto" loop></audio>
+    <audio id="snd-shutter" src="/assets/shutter.wav" preload="auto"></audio>
+    <audio id="snd-whirr" src="/assets/mechanical_whirr.wav" preload="auto" loop></audio>
 
     <script>
         const video = document.getElementById('camera-feed');
@@ -91,7 +91,26 @@
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (re) => { prevStripBase64 = re.target.result; };
+                reader.onload = (re) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const maxDim = 1200;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            const scale = Math.min(maxDim / w, maxDim / h);
+                            w = Math.round(w * scale);
+                            h = Math.round(h * scale);
+                        }
+                        const offCanvas = document.createElement('canvas');
+                        offCanvas.width = w;
+                        offCanvas.height = h;
+                        const offCtx = offCanvas.getContext('2d');
+                        offCtx.drawImage(img, 0, 0, w, h);
+                        prevStripBase64 = offCanvas.toDataURL('image/jpeg', 0.85);
+                    };
+                    img.src = re.target.result;
+                };
                 reader.readAsDataURL(file);
             }
         });
@@ -181,6 +200,17 @@
             void flashOverlay.offsetWidth; // trigger reflow
             flashOverlay.classList.add('flash-active');
             
+            // Downscale frame to max 640px wide to respect Vercel payload limits
+            const maxW = 640;
+            const videoW = video.videoWidth || 640;
+            const videoH = video.videoHeight || 480;
+            const scale = Math.min(1.0, maxW / videoW);
+            const targetW = Math.round(videoW * scale);
+            const targetH = Math.round(videoH * scale);
+
+            canvas.width = targetW;
+            canvas.height = targetH;
+
             // Grab frame to Base64
             // Keep mirroring in mind (our CSS mirrors the video, so we should mirror the canvas to match)
             ctx.save();
@@ -189,7 +219,7 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             ctx.restore();
 
-            const imgBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            const imgBase64 = canvas.toDataURL('image/jpeg', 0.85);
             frames.push(imgBase64);
 
             photosTaken++;
@@ -265,7 +295,7 @@
         saveBtn.addEventListener('click', () => {
             const a = document.createElement('a');
             a.href = resultStrip.src;
-            a.download = `strip_${new Date().getTime()}.png`;
+            a.download = `strip_${new Date().getTime()}.jpg`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

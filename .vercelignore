@@ -1,0 +1,12 @@
+.git
+.gitignore
+.gitattributes
+README.md
+Plan/
+Project/
+setup_assets.py
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class

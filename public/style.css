@@ -2,11 +2,11 @@
 
 @font-face {
     font-family: 'Courier Prime';
-    src: url('../assets/CourierPrime-Regular.ttf');
+    src: url('/assets/CourierPrime-Regular.ttf');
 }
 @font-face {
     font-family: 'Digital7';
-    src: url('../assets/Digital-7.ttf');
+    src: url('/assets/Digital-7.ttf');
 }
 
 :root {
